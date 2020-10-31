@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-09-16 15:11:49
+上次编辑时间: 2020-11-01 00:02:13
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 from xml.parsers.expat import ParserCreate
 
 # aria2c下载生成的txt命令示例 以及使用代理的示例
-# aria2c -i urls.txt -d DownloadPath --https-proxy="http://127.0.0.1:1080" --http-proxy="http://127.0.0.1:1080"
+# aria2c -i urls.txt -d DownloadPath --https-proxy="http://127.0.0.1:10809" --http-proxy="http://127.0.0.1:10809"
 
 AudioMap = {
     "1":"PCM",
@@ -109,10 +109,16 @@ class MPD(MPDItem):
     def __init__(self, name: str):
         super(MPD, self).__init__(name)
 
+class BaseURL(MPDItem):
+    def __init__(self, name: str):
+        super(BaseURL, self).__init__(name)
+        self.innertext = None
+
 class Period(MPDItem):
     def __init__(self, name: str):
         super(Period, self).__init__(name)
         self.id = None
+        self.start = 0
         self.duration = 0.0
 
 class AdaptationSet(MPDItem):
@@ -152,18 +158,35 @@ class SegmentTemplate(MPDItem):
         self.presentationTimeOffset = None
         self.initialization = None
         self.media = None
-        self.startNumber = None
+        self.startNumber = 1
+
+'''
+The SegmentTimeline element shall contain a list of S elements each of which describes a sequence
+of contiguous segments of identical MPD duration. The S element contains a mandatory @d attribute
+specifying the MPD duration, an optional @r repeat count attribute specifying the number of contiguous
+Segments with identical MPD duration minus one and an optional @t time attribute. The value of the @t
+attribute minus the value of the @presentationTimeOffset specifies the MPD start time of the first
+Segment in the series.
+The @r attribute has a default value of zero (i.e., a single Segment in the series) when not present. For
+example, a repeat count of three means there are four contiguous Segments, each with the same MPD
+duration. The value of the @r attribute of the S element may be set to a negative value indicating that the
+duration indicated in @d repeats until the S@t of the next S element or if it is the last S element in the
+SegmentTimeline element until the end of the Period or the next update of the MPD, i.e. it is treated
+in the same way as the @duration attribute for a full period. 
+'''
 
 class SegmentTimeline(MPDItem):
+    # 5.3.9.6 Segment timeline
     def __init__(self, name: str):
         super(SegmentTimeline, self).__init__(name)
 
 class S(MPDItem):
+    # 5.3.9.6 Segment timeline
     def __init__(self, name: str):
         super(S, self).__init__(name)
-        self.t = None
-        self.d = None
-        self.r = None
+        self.t = None # presentationTimeOffset
+        self.d = None # duration
+        self.r = None # repeat
 
 class ContentProtection(MPDItem):
     def __init__(self, name: str):
@@ -188,6 +211,7 @@ class MPDPaser(object):
         self.ar_idid = {} # Dict[str, Links]
         self.objs = {
             "MPD": MPD,
+            "BaseURL": BaseURL,
             "Period": Period,
             "AdaptationSet": AdaptationSet,
             "Representation": Representation,
@@ -229,7 +253,7 @@ class MPDPaser(object):
             self.obj = self.stack[-1]
 
     def handle_character_data(self, texts):
-        pass
+        if texts.strip() != "": self.obj.innertext = texts
 
     @staticmethod
     def find_child(name: str, parent):
@@ -244,28 +268,56 @@ class MPDPaser(object):
         print(f"{self.step * '--'}>{obj.name}")
 
     def generate(self):
+        BaseURLs = self.find_child("BaseURL", self.obj)
+        if len(BaseURLs) > 0: baseurl = BaseURLs[0].innertext
         Periods = self.find_child("Period", self.obj)
         for _Period in Periods:
             _Period: Period
+            if isinstance(_Period.start, str):
+                start = re.match("PT(\d+)(\.?\d+)S", _Period.start)
+                if start is None:
+                    start = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", _Period.start)
+                    if start is not None:
+                        _h, _m, _s, _ss =  start.groups()
+                        start = int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
+                else:
+                    start = float(start.group(1)) if start else 0.0
+                _Period.start = start
             if isinstance(_Period.duration, str):
                 duration = re.match("PT(\d+)(\.?\d+)S", _Period.duration)
-                duration = float(duration.group(1)) if duration else 0.0
+                if duration is None:
+                    duration = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", _Period.duration)
+                    if duration is not None:
+                        _h, _m, _s, _ss =  duration.groups()
+                        duration = int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
+                else:
+                    duration = float(duration.group(1)) if duration else 0.0
+                    _Period.duration = duration
             AdaptationSets = self.find_child("AdaptationSet", _Period)
             for _AdaptationSet in AdaptationSets:
                 _AdaptationSet: AdaptationSet
                 Representations = self.find_child("Representation", _AdaptationSet)
+                SegmentTemplates = self.find_child("SegmentTemplate", _AdaptationSet)
                 for _Representation in Representations:
                     _Representation: Representation
-                    self.generate_Segments(duration, _AdaptationSet, _Representation)
+                    if len(SegmentTemplates) == 0:
+                        self.generate_Segments(baseurl, _Period, _AdaptationSet, _Representation)
+                    else:
+                        # SegmentTemplate和Representation同一级的话，解析不一样
+                        self.generate_Segments(baseurl, _Period, _AdaptationSet, _Representation, isInnerSeg=False)
         for track_key, links in self.ar_idid.items():
             links: Links
             links.dump_urls()
 
-    def generate_Segments(self, duration: float, _AdaptationSet: AdaptationSet, _Representation: Representation):
+    def generate_Segments(self, baseurl, _Period: Period, _AdaptationSet: AdaptationSet, _Representation: Representation, isInnerSeg: bool = True):
 
-        track_key = f"{_AdaptationSet.id}-{_Representation.id}"
+        if isInnerSeg is True:
+            track_key = f"{_AdaptationSet.id}-{_Representation.id}"
+        else:
+            track_key = f"{_Representation.id}"
+        track_key = track_key.replace("/", "_")
         links = Links(
-            self.basename, duration, _AdaptationSet.contentType, track_key, 
+            self.basename, _Period.duration, _AdaptationSet.contentType, track_key, 
             _Representation.bandwidth, _Representation.codecs
         )
         if _AdaptationSet.lang is not None:
@@ -274,18 +326,25 @@ class MPDPaser(object):
         if _Representation.mimeType == "video/mp4":
             if _Representation.width is not None:
                 links.resolution = f"{_Representation.width}x{_Representation.height}p"
-        SegmentTemplates = MPDPaser.find_child("SegmentTemplate", _Representation)
+        if isInnerSeg is True:
+            SegmentTemplates = MPDPaser.find_child("SegmentTemplate", _Representation)
+        else:
+            SegmentTemplates = MPDPaser.find_child("SegmentTemplate", _AdaptationSet)
         for _SegmentTemplate in SegmentTemplates:
             _SegmentTemplate: SegmentTemplate
             start_number: int = int(_SegmentTemplate.startNumber)
             if self.ar_idid.get(links.track_key) is None:
-                links.urls.append(_SegmentTemplate.initialization)
+                _initialization = _SegmentTemplate.initialization
+                if "$RepresentationID$" in _initialization:
+                    _initialization = _initialization.replace("$RepresentationID$", _Representation.id)
+                if baseurl is not None: _initialization = baseurl + _initialization
+                links.urls.append(_initialization)
                 self.ar_idid[links.track_key] = links
             else:
                 if self.mode == "split":
                     self.ar_idid[links.track_key] = links
                 else:
-                    self.ar_idid[links.track_key].update(duration, _Representation.bandwidth)
+                    self.ar_idid[links.track_key].update(_Period.duration, _Representation.bandwidth)
             SegmentTimelines = MPDPaser.find_child("SegmentTimeline", _SegmentTemplate)
             urls = []
             for _SegmentTimeline in SegmentTimelines:
@@ -295,8 +354,18 @@ class MPDPaser(object):
                 for _S in SS:
                     _S: S
                     repeat += 1 if _S.r is None else int(_S.r)
+                _last_time_offset = _Period.start
                 for offset in range(repeat):
-                    urls.append(_SegmentTemplate.media.replace("$Number$", str(start_number)))
+                    _media = _SegmentTemplate.media # type: str
+                    if "$Number$" in _media:
+                        _media = _media.replace("$Number$", str(start_number))
+                    if "$RepresentationID$" in _media:
+                        _media = _media.replace("$RepresentationID$", _Representation.id)
+                    # if "$Time$" in _media: # 60000 180000 300000 -> 60000 120000 120000
+                    #     _media = _media.replace("$Time$", ?)
+                    _url = _media
+                    if baseurl is not None: _url = baseurl + _url
+                    urls.append(_url)
                     start_number += 1
             self.ar_idid[links.track_key].urls.extend(urls)
             if self.mode == "split":
@@ -315,7 +384,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.0@xhlove",
+        prog="mpd content parser v1.1@xhlove",
         description=(
             "Mpd Content Parser, "
             "extract pssh and generate all tracks download links easily. "
