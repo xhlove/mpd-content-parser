@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-11-01 00:02:13
+上次编辑时间: 2020-11-01 21:37:25
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -154,7 +154,9 @@ class Representation(MPDItem):
 class SegmentTemplate(MPDItem):
     def __init__(self, name: str):
         super(SegmentTemplate, self).__init__(name)
+        # SegmentTemplate没有duration的话 timescale好像没什么用
         self.timescale = None
+        self.duration = None
         self.presentationTimeOffset = None
         self.initialization = None
         self.media = None
@@ -349,24 +351,25 @@ class MPDPaser(object):
             urls = []
             for _SegmentTimeline in SegmentTimelines:
                 _SegmentTimeline: SegmentTimeline
-                repeat = 0
+                # repeat = 0
+                _last_time_offset = 0 # _Period.start
                 SS = MPDPaser.find_child("S", _SegmentTimeline)
                 for _S in SS:
                     _S: S
-                    repeat += 1 if _S.r is None else int(_S.r)
-                _last_time_offset = _Period.start
-                for offset in range(repeat):
-                    _media = _SegmentTemplate.media # type: str
-                    if "$Number$" in _media:
-                        _media = _media.replace("$Number$", str(start_number))
-                    if "$RepresentationID$" in _media:
-                        _media = _media.replace("$RepresentationID$", _Representation.id)
-                    # if "$Time$" in _media: # 60000 180000 300000 -> 60000 120000 120000
-                    #     _media = _media.replace("$Time$", ?)
-                    _url = _media
-                    if baseurl is not None: _url = baseurl + _url
-                    urls.append(_url)
-                    start_number += 1
+                    repeat = 1 if _S.r is None else int(_S.r) + 1
+                    for offset in range(repeat):
+                        _media = _SegmentTemplate.media # type: str
+                        if "$Number$" in _media:
+                            _media = _media.replace("$Number$", str(start_number))
+                            start_number += 1
+                        if "$RepresentationID$" in _media:
+                            _media = _media.replace("$RepresentationID$", _Representation.id)
+                        if "$Time$" in _media:
+                            _media = _media.replace("$Time$", str(_last_time_offset))
+                            _last_time_offset += int(_S.d)
+                        _url = _media
+                        if baseurl is not None: _url = baseurl + _url
+                        urls.append(_url)
             self.ar_idid[links.track_key].urls.extend(urls)
             if self.mode == "split":
                 self.ar_idid[links.track_key].dump_urls()
