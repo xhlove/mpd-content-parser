@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-11-05 23:14:12
+上次编辑时间: 2020-11-05 23:45:17
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -48,7 +48,7 @@ class Links(object):
         basename, duration, content_type, track_key, bandwidth, codecs = args
         self.basename: str = basename
         self.duration: float = duration
-        self.content_type: str = content_type
+        self.content_type: str = content_type if content_type is not None else "video"
         self.track_key: str = track_key
         self.bandwidth: float = float(bandwidth)
         self.codecs: str = self.get_codecs(codecs)
