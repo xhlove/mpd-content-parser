@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-11-01 21:37:25
+上次编辑时间: 2020-11-05 23:13:52
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -271,7 +271,7 @@ class MPDPaser(object):
 
     def generate(self):
         BaseURLs = self.find_child("BaseURL", self.obj)
-        if len(BaseURLs) > 0: baseurl = BaseURLs[0].innertext
+        baseurl = None if len(BaseURLs) > 0 else BaseURLs[0].innertext
         Periods = self.find_child("Period", self.obj)
         for _Period in Periods:
             _Period: Period
