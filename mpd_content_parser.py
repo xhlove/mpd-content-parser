@@ -1,11 +1,12 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-11 23:19:41
+上次编辑时间: 2020-12-12 00:26:42
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
 import re
+import math
 from typing import Dict
 from pathlib import Path
 from argparse import ArgumentParser
@@ -40,7 +41,7 @@ AudioMap = {
     "vp8":"VP8",
     "vp8.0":"VP8",
     "theora":"THEORA",
-}
+}   
 
 class Links(object):
 
@@ -134,6 +135,7 @@ class AdaptationSet(MPDItem):
         self.par = None
         self.width = None
         self.height = None
+        self.mimeType = None
 
 class Role(MPDItem):
     def __init__(self, name: str):
@@ -167,7 +169,7 @@ The SegmentTimeline element shall contain a list of S elements each of which des
 of contiguous segments of identical MPD duration. The S element contains a mandatory @d attribute
 specifying the MPD duration, an optional @r repeat count attribute specifying the number of contiguous
 Segments with identical MPD duration minus one and an optional @t time attribute. The value of the @t
-attribute minus the value of the @presentationTimeOffset specifies the MPD start time of the first
+attribute minus the value of the @presentationTimeOffset specifies the MPD start time of the firstpecifies the MPD start time of the first
 Segment in the series.
 The @r attribute has a default value of zero (i.e., a single Segment in the series) when not present. For
 example, a repeat count of three means there are four contiguous Segments, each with the same MPD
@@ -341,7 +343,7 @@ class MPDPaser(object):
             SegmentTemplates = MPDPaser.find_child("SegmentTemplate", _AdaptationSet)
         for _SegmentTemplate in SegmentTemplates:
             _SegmentTemplate: SegmentTemplate
-            start_number: int = int(_SegmentTemplate.startNumber)
+            start_number = int(_SegmentTemplate.startNumber) # type: int
             if self.ar_idid.get(links.track_key) is None:
                 _initialization = _SegmentTemplate.initialization
                 if "$RepresentationID$" in _initialization:
@@ -356,27 +358,44 @@ class MPDPaser(object):
                     self.ar_idid[links.track_key].update(_Period.duration, _Representation.bandwidth)
             SegmentTimelines = MPDPaser.find_child("SegmentTimeline", _SegmentTemplate)
             urls = []
-            for _SegmentTimeline in SegmentTimelines:
-                _SegmentTimeline: SegmentTimeline
-                # repeat = 0
-                _last_time_offset = 0 # _Period.start
-                SS = MPDPaser.find_child("S", _SegmentTimeline)
-                for _S in SS:
-                    _S: S
-                    repeat = 1 if _S.r is None else int(_S.r) + 1
-                    for offset in range(repeat):
-                        _media = _SegmentTemplate.media # type: str
-                        if "$Number$" in _media:
-                            _media = _media.replace("$Number$", str(start_number))
-                            start_number += 1
-                        if "$RepresentationID$" in _media:
-                            _media = _media.replace("$RepresentationID$", _Representation.id)
-                        if "$Time$" in _media:
-                            _media = _media.replace("$Time$", str(_last_time_offset))
-                            _last_time_offset += int(_S.d)
-                        _url = _media
-                        if baseurl is not None: _url = baseurl + _url
-                        urls.append(_url)
+            if len(SegmentTimelines) == 0:
+                interval_duration = float(int(_SegmentTemplate.duration) / int(_SegmentTemplate.timescale))
+                if _SegmentTemplate.presentationTimeOffset is None:
+                    _Segment_duration = _Period.duration
+                else:
+                    _Segment_duration = _Period.duration
+                repeat = int(math.ceil(_Segment_duration / interval_duration))
+                for number in range(start_number, repeat + start_number):
+                    _media = _SegmentTemplate.media # type: str
+                    if "$Number$" in _media:
+                        _media = _media.replace("$Number$", str(number))
+                    if "$RepresentationID$" in _media:
+                        _media = _media.replace("$RepresentationID$", _Representation.id)
+                    _url = _media
+                    if baseurl is not None: _url = baseurl + _url
+                    urls.append(_url)
+            else:
+                for _SegmentTimeline in SegmentTimelines:
+                    _SegmentTimeline: SegmentTimeline
+                    # repeat = 0
+                    _last_time_offset = 0 # _Period.start
+                    SS = MPDPaser.find_child("S", _SegmentTimeline)
+                    for _S in SS:
+                        _S: S
+                        repeat = 1 if _S.r is None else int(_S.r) + 1
+                        for offset in range(repeat):
+                            _media = _SegmentTemplate.media # type: str
+                            if "$Number$" in _media:
+                                _media = _media.replace("$Number$", str(start_number))
+                                start_number += 1
+                            if "$RepresentationID$" in _media:
+                                _media = _media.replace("$RepresentationID$", _Representation.id)
+                            if "$Time$" in _media:
+                                _media = _media.replace("$Time$", str(_last_time_offset))
+                                _last_time_offset += int(_S.d)
+                            _url = _media
+                            if baseurl is not None: _url = baseurl + _url
+                            urls.append(_url)
             self.ar_idid[links.track_key].urls.extend(urls)
             if self.mode == "split":
                 self.ar_idid[links.track_key].dump_urls()
@@ -394,7 +413,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.2@xhlove",
+        prog="mpd content parser v1.3@xhlove",
         description=(
             "Mpd Content Parser, "
             "extract pssh and generate all tracks download links easily. "
