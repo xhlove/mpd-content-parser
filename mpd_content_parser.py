@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-11-05 23:45:17
+上次编辑时间: 2020-12-11 23:19:41
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -292,12 +292,16 @@ class MPDPaser(object):
                     if duration is not None:
                         _h, _m, _s, _ss =  duration.groups()
                         duration = int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
+                        _Period.duration = duration
                 else:
                     duration = float(duration.group(1)) if duration else 0.0
                     _Period.duration = duration
             AdaptationSets = self.find_child("AdaptationSet", _Period)
             for _AdaptationSet in AdaptationSets:
                 _AdaptationSet: AdaptationSet
+                if baseurl is None:
+                    BaseURLs = self.find_child("BaseURL", _AdaptationSet)
+                    baseurl = None if len(BaseURLs) == 0 else BaseURLs[0].innertext
                 Representations = self.find_child("Representation", _AdaptationSet)
                 SegmentTemplates = self.find_child("SegmentTemplate", _AdaptationSet)
                 for _Representation in Representations:
@@ -324,10 +328,13 @@ class MPDPaser(object):
         )
         if _AdaptationSet.lang is not None:
             links.lang = _AdaptationSet.lang
-        links.suffix = "." + _Representation.mimeType.split("/")[0].split("-")[-1]
-        if _Representation.mimeType == "video/mp4":
-            if _Representation.width is not None:
-                links.resolution = f"{_Representation.width}x{_Representation.height}p"
+        if _AdaptationSet.mimeType is not None:
+            links.suffix = "." + _AdaptationSet.mimeType.split("/")[0].split("-")[-1]
+        else:
+            links.suffix = "." + _Representation.mimeType.split("/")[0].split("-")[-1]
+            if _Representation.mimeType == "video/mp4":
+                if _Representation.width is not None:
+                    links.resolution = f"{_Representation.width}x{_Representation.height}p"
         if isInnerSeg is True:
             SegmentTemplates = MPDPaser.find_child("SegmentTemplate", _Representation)
         else:
@@ -387,7 +394,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.1@xhlove",
+        prog="mpd content parser v1.2@xhlove",
         description=(
             "Mpd Content Parser, "
             "extract pssh and generate all tracks download links easily. "
