@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-12 11:38:06
+上次编辑时间: 2020-12-12 11:43:21
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -203,11 +203,11 @@ class cenc_pssh(MPDItem):
         super(cenc_pssh, self).__init__(name)
 
 class MPDPaser(object):
-    def __init__(self, basename: str, xmlraw: str, mode: str):
+    def __init__(self, basename: str, xmlraw: str, split: bool):
         self.step = 0
         self.basename = basename
         self.xmlraw = xmlraw
-        self.mode = mode
+        self.split = split
         self.obj = None
         self.parser = None
         self.stack = list()
@@ -327,7 +327,7 @@ class MPDPaser(object):
             track_key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
         else:
             track_key = f"{_Representation.id}-{_contentType}"
-        if self.mode == "split" and _Period.id is not None:
+        if self.split and _Period.id is not None:
             track_key = f"{_Period.id}-" + track_key
         track_key = track_key.replace("/", "_")
         links = Links(
@@ -358,7 +358,7 @@ class MPDPaser(object):
                 links.urls.append(_initialization)
                 self.ar_idid[links.track_key] = links
             else:
-                if self.mode == "split":
+                if self.split is True:
                     self.ar_idid[links.track_key] = links
                 else:
                     self.ar_idid[links.track_key].update(_Period.duration, _Representation.bandwidth)
@@ -403,7 +403,7 @@ class MPDPaser(object):
                             if baseurl is not None: _url = baseurl + _url
                             urls.append(_url)
             self.ar_idid[links.track_key].urls.extend(urls)
-            if self.mode == "split":
+            if self.split is True:
                 self.ar_idid[links.track_key].dump_urls()
 
     @staticmethod
@@ -427,14 +427,14 @@ def main():
         )
     )
     command.add_argument("-p", "--path", help="mpd file path.")
-    command.add_argument("-m", "--mode", choices=["once", "split"], default="once", help="generate links once time or split to write. Default is once")
+    command.add_argument("-s", "--split", action="store_true", help="generate links for each Period.")
     args = command.parse_args()
     if args.path is None:
         args.path = input("paste mpd file path plz:\n")
     xmlpath = Path(args.path).resolve()
     if xmlpath.exists():
         xmlraw = xmlpath.read_text(encoding="utf-8")
-        parser = MPDPaser(xmlpath.stem, xmlraw, args.mode)
+        parser = MPDPaser(xmlpath.stem, xmlraw, args.split)
         parser.work()
         # parser.tree(parser.obj)
         parser.generate()

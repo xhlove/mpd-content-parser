@@ -9,7 +9,7 @@ Parse mpd content as much as possible.
 # usage
 
 ```bash
-usage: mpd content parser v1.4@xhlove [-h] [-p PATH] [-m {once,split}]
+usage: mpd content parser v1.4@xhlove [-h] [-p PATH] [-s]
 
 Mpd Content Parser, extract pssh and generate all tracks download links
 easily. Report bug to vvtoolbox.dev@gmail.com
@@ -17,9 +17,7 @@ easily. Report bug to vvtoolbox.dev@gmail.com
 optional arguments:
   -h, --help            show this help message and exit
   -p PATH, --path PATH  mpd file path.
-  -m {once,split}, --mode {once,split}
-                        generate links once time or split to write. Default is
-                        once
+  -s, --split           generate links for each Period.
 ```
 
 # output
