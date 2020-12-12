@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-12 00:38:39
+上次编辑时间: 2020-12-12 11:28:26
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -46,10 +46,9 @@ AudioMap = {
 class Links(object):
 
     def __init__(self, *args):
-        basename, duration, content_type, track_key, bandwidth, codecs = args
+        basename, duration, track_key, bandwidth, codecs = args
         self.basename: str = basename
         self.duration: float = duration
-        self.content_type: str = content_type if content_type is not None else "video"
         self.track_key: str = track_key
         self.bandwidth: float = float(bandwidth)
         self.codecs: str = self.get_codecs(codecs)
@@ -80,7 +79,7 @@ class Links(object):
         self.duration += duration
 
     def get_path(self) -> Path:
-        filename = f"{self.basename}.{self.track_key}.{self.content_type.title()}.{self.codecs}.{self.bandwidth/1000:.3f}kbps"
+        filename = f"{self.basename}-{self.track_key}-{self.codecs}-{self.bandwidth/1000:.3f}kbps"
         if self.lang != "":
             filename += f".{self.lang}"
         if self.resolution != "":
@@ -318,14 +317,19 @@ class MPDPaser(object):
             links.dump_urls()
 
     def generate_Segments(self, baseurl, _Period: Period, _AdaptationSet: AdaptationSet, _Representation: Representation, isInnerSeg: bool = True):
-
-        if isInnerSeg is True:
-            track_key = f"{_AdaptationSet.id}-{_Representation.id}"
+        if _AdaptationSet.contentType is not None:
+            _contentType = _AdaptationSet.contentType
+        elif _AdaptationSet.mimeType is not None:
+            _contentType = _AdaptationSet.mimeType.split('/')[0].title()
         else:
-            track_key = f"{_Representation.id}"
+            _contentType = 'UNKONWN'
+        if isInnerSeg is True:
+            track_key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
+        else:
+            track_key = f"{_Representation.id}-{_contentType}"
         track_key = track_key.replace("/", "_")
         links = Links(
-            self.basename, _Period.duration, _AdaptationSet.contentType, track_key, 
+            self.basename, _Period.duration, track_key, 
             _Representation.bandwidth, _Representation.codecs
         )
         if _AdaptationSet.lang is not None:
@@ -413,7 +417,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.3@xhlove",
+        prog="mpd content parser v1.4@xhlove",
         description=(
             "Mpd Content Parser, "
             "extract pssh and generate all tracks download links easily. "
