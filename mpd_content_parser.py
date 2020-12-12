@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-12 11:28:26
+上次编辑时间: 2020-12-12 11:38:06
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -327,6 +327,8 @@ class MPDPaser(object):
             track_key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
         else:
             track_key = f"{_Representation.id}-{_contentType}"
+        if self.mode == "split" and _Period.id is not None:
+            track_key = f"{_Period.id}-" + track_key
         track_key = track_key.replace("/", "_")
         links = Links(
             self.basename, _Period.duration, track_key, 
