@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-12 11:46:44
+上次编辑时间: 2020-12-12 16:29:40
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -270,33 +270,30 @@ class MPDPaser(object):
         self.step -= 1
         print(f"{self.step * '--'}>{obj.name}")
 
+    def match_duration(self, duration):
+        if isinstance(duration, str) is False: return
+
+        duration = re.match("PT(\d+)(\.?\d+)S", duration)
+        if duration is not None:
+            return float(duration.group(1)) if duration else 0.0
+        
+        duration = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", duration)
+        if duration is not None:
+            _h, _m, _s, _ss =  duration.groups()
+            return int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
+
     def generate(self):
+        mediaPresentationDuration = self.obj.__dict__.get("mediaPresentationDuration")
+        self.mediaPresentationDuration = self.match_duration(mediaPresentationDuration)
         BaseURLs = self.find_child("BaseURL", self.obj)
         baseurl = None if len(BaseURLs) == 0 else BaseURLs[0].innertext
         Periods = self.find_child("Period", self.obj)
         for _Period in Periods:
             _Period: Period
             if isinstance(_Period.start, str):
-                start = re.match("PT(\d+)(\.?\d+)S", _Period.start)
-                if start is None:
-                    start = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", _Period.start)
-                    if start is not None:
-                        _h, _m, _s, _ss =  start.groups()
-                        start = int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
-                else:
-                    start = float(start.group(1)) if start else 0.0
-                _Period.start = start
+                _Period.start = self.match_duration(_Period.duration)
             if isinstance(_Period.duration, str):
-                duration = re.match("PT(\d+)(\.?\d+)S", _Period.duration)
-                if duration is None:
-                    duration = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", _Period.duration)
-                    if duration is not None:
-                        _h, _m, _s, _ss =  duration.groups()
-                        duration = int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
-                        _Period.duration = duration
-                else:
-                    duration = float(duration.group(1)) if duration else 0.0
-                    _Period.duration = duration
+                _Period.duration = self.match_duration(_Period.duration)
             AdaptationSets = self.find_child("AdaptationSet", _Period)
             for _AdaptationSet in AdaptationSets:
                 _AdaptationSet: AdaptationSet
@@ -321,6 +318,8 @@ class MPDPaser(object):
             _contentType = _AdaptationSet.contentType
         elif _AdaptationSet.mimeType is not None:
             _contentType = _AdaptationSet.mimeType.split('/')[0].title()
+        elif _Representation.mimeType is not None:
+            _contentType = _Representation.mimeType.split('/')[0].title()
         else:
             _contentType = 'UNKONWN'
         if isInnerSeg is True:
@@ -329,6 +328,8 @@ class MPDPaser(object):
             track_key = f"{_Representation.id}-{_contentType}"
         if self.split and _Period.id is not None:
             track_key = f"{_Period.id}-" + track_key
+        if _Period.duration == 0.0 and self.mediaPresentationDuration is not None:
+            _Period.duration = self.mediaPresentationDuration
         track_key = track_key.replace("/", "_")
         links = Links(
             self.basename, _Period.duration, track_key, 
