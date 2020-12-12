@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-12 11:43:21
+上次编辑时间: 2020-12-12 11:46:44
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -422,7 +422,7 @@ def main():
         prog="mpd content parser v1.4@xhlove",
         description=(
             "Mpd Content Parser, "
-            "extract pssh and generate all tracks download links easily. "
+            "generate all tracks download links easily. "
             "Report bug to vvtoolbox.dev@gmail.com"
         )
     )
