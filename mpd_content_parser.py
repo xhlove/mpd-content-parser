@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2021-01-01 17:35:09
+上次编辑时间: 2021-01-01 17:57:37
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -140,25 +140,25 @@ class MPDPaser(object):
         else:
             _codecs = _Representation.codecs
         if isInnerSeg is True:
-            track_key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
+            key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
         else:
-            track_key = f"{_Representation.id}-{_contentType}"
+            key = f"{_Representation.id}-{_contentType}"
         if self.split and _Period.id is not None:
-            track_key = f"{_Period.id}-" + track_key
+            key = f"{_Period.id}-" + key
         if _Period.duration == 0.0 and self.mediaPresentationDuration is not None:
             _Period.duration = self.mediaPresentationDuration
-        track_key = track_key.replace("/", "_")
-        links = Links(self.basename, _Period.duration, track_key,
-                      _Representation.bandwidth, _codecs)
+        key = key.replace("/", "_")
+        links = Links(self.basename, _Period.duration, key, _Representation.bandwidth, _codecs)
         if _AdaptationSet.lang is not None:
             links.lang = _AdaptationSet.lang
         if _AdaptationSet.mimeType is not None:
             links.suffix = _AdaptationSet.get_suffix()
         else:
             links.suffix = _Representation.get_suffix()
-            if _Representation.mimeType == "video/mp4":
-                if _Representation.width is not None:
-                    links.resolution = _Representation.get_resolution()
+        if _Representation.width is not None:
+            links.resolution = _Representation.get_resolution()
+        elif _AdaptationSet.width is not None:
+            links.resolution = _AdaptationSet.get_resolution()
         if isInnerSeg is True:
             SegmentTemplates = find_child("SegmentTemplate", _Representation)
         else:
@@ -166,19 +166,19 @@ class MPDPaser(object):
         for _SegmentTemplate in SegmentTemplates:
             _SegmentTemplate: SegmentTemplate
             start_number = int(_SegmentTemplate.startNumber)  # type: int
-            if self.tracks.get(links.track_key) is None:
+            if self.tracks.get(links.key) is None:
                 _initialization = _SegmentTemplate.get_initialization()
                 if "$RepresentationID$" in _initialization:
                     _initialization = _initialization.replace("$RepresentationID$", _Representation.id)
                 if baseurl is not None:
                     _initialization = baseurl + _initialization
                 links.urls.append(_initialization)
-                self.tracks[links.track_key] = links
+                self.tracks[links.key] = links
             else:
                 if self.split is True:
-                    self.tracks[links.track_key] = links
+                    self.tracks[links.key] = links
                 else:
-                    self.tracks[links.track_key].update(
+                    self.tracks[links.key].update(
                         _Period.duration, _Representation.bandwidth)
             SegmentTimelines = find_child("SegmentTimeline", _SegmentTemplate)
             urls = []
@@ -222,9 +222,9 @@ class MPDPaser(object):
                             if baseurl is not None:
                                 _url = baseurl + _url
                             urls.append(_url)
-            self.tracks[links.track_key].urls.extend(urls)
+            self.tracks[links.key].urls.extend(urls)
             if self.split is True:
-                self.tracks[links.track_key].dump_urls()
+                self.tracks[links.key].dump_urls()
 
 
 def main():

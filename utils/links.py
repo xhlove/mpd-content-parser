@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2021-01-01 16:44:36
-上次编辑时间: 2021-01-01 16:45:16
+上次编辑时间: 2021-01-01 17:57:47
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -12,10 +12,10 @@ from .maps.audiomap import AUDIOMAP
 
 class Links(object):
     def __init__(self, *args):
-        basename, duration, track_key, bandwidth, codecs = args
+        basename, duration, key, bandwidth, codecs = args
         self.basename: str = basename
         self.duration: float = duration
-        self.track_key: str = track_key
+        self.key: str = key
         self.bandwidth: float = float(bandwidth)
         self.codecs: str = self.get_codecs(codecs)
         self.suffix: str = ".unkonwn"  # aria2c下载的文件名后缀
@@ -45,7 +45,7 @@ class Links(object):
         self.duration += duration
 
     def get_path(self) -> Path:
-        filename = f"{self.basename}-{self.track_key}-{self.codecs}-{self.bandwidth/1000:.3f}kbps"
+        filename = f"{self.basename}-{self.key}-{self.codecs}-{self.bandwidth/1000:.3f}kbps"
         if self.lang != "":
             filename += f".{self.lang}"
         if self.resolution != "":

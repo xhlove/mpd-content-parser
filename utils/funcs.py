@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2021-01-01 17:27:48
-上次编辑时间: 2021-01-01 17:34:50
+上次编辑时间: 2021-01-01 17:37:05
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -30,7 +30,7 @@ def dump(tracks: Dict[str, Links]):
         links.dump_urls()
 
 
-def match_duration(self, _duration):
+def match_duration(_duration):
     if isinstance(_duration, str) is False:
         return
 

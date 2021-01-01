@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2021-01-01 15:10:20
-上次编辑时间: 2021-01-01 17:21:44
+上次编辑时间: 2021-01-01 17:54:26
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -29,6 +29,9 @@ class AdaptationSet(MPDItem):
             return self.contentType
         if self.mimeType is not None:
             return self.mimeType.split('/')[0].title()
+
+    def get_resolution(self):
+        return f"{self.width}x{self.height}p"
 
     def get_suffix(self):
         return '.' + self.mimeType.split('/')[0].split('-')[-1]
