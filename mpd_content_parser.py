@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2020-12-12 16:29:40
+上次编辑时间: 2021-01-01 14:38:08
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -270,23 +270,26 @@ class MPDPaser(object):
         self.step -= 1
         print(f"{self.step * '--'}>{obj.name}")
 
-    def match_duration(self, duration):
-        if isinstance(duration, str) is False: return
+    def match_duration(self, _duration):
+        if isinstance(_duration, str) is False: return
 
-        duration = re.match("PT(\d+)(\.?\d+)S", duration)
+        duration = re.match("PT(\d+)(\.?\d+)S", _duration)
         if duration is not None:
             return float(duration.group(1)) if duration else 0.0
-        
-        duration = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", duration)
+        # P0Y0M0DT0H3M30.000S
+        duration = re.match("PT(\d+)H(\d+)M(\d+)(\.?\d+)S", _duration.replace('0Y0M0D', ''))
         if duration is not None:
             _h, _m, _s, _ss =  duration.groups()
             return int(_h) * 60 * 60 + int(_m) * 60 + int(_s) + float("0" + _ss)
 
-    def generate(self):
+    def generate(self, _baseurl: str):
         mediaPresentationDuration = self.obj.__dict__.get("mediaPresentationDuration")
         self.mediaPresentationDuration = self.match_duration(mediaPresentationDuration)
-        BaseURLs = self.find_child("BaseURL", self.obj)
-        baseurl = None if len(BaseURLs) == 0 else BaseURLs[0].innertext
+        if _baseurl == '':
+            BaseURLs = self.find_child("BaseURL", self.obj)
+            baseurl = None if len(BaseURLs) == 0 else BaseURLs[0].innertext
+        else:
+            baseurl = _baseurl
         Periods = self.find_child("Period", self.obj)
         for _Period in Periods:
             _Period: Period
@@ -322,6 +325,10 @@ class MPDPaser(object):
             _contentType = _Representation.mimeType.split('/')[0].title()
         else:
             _contentType = 'UNKONWN'
+        if _AdaptationSet.codecs is not None:
+            _codecs = _AdaptationSet.codecs
+        else:
+            _codecs = _Representation.codecs
         if isInnerSeg is True:
             track_key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
         else:
@@ -333,7 +340,7 @@ class MPDPaser(object):
         track_key = track_key.replace("/", "_")
         links = Links(
             self.basename, _Period.duration, track_key, 
-            _Representation.bandwidth, _Representation.codecs
+            _Representation.bandwidth, _codecs
         )
         if _AdaptationSet.lang is not None:
             links.lang = _AdaptationSet.lang
@@ -352,7 +359,7 @@ class MPDPaser(object):
             _SegmentTemplate: SegmentTemplate
             start_number = int(_SegmentTemplate.startNumber) # type: int
             if self.ar_idid.get(links.track_key) is None:
-                _initialization = _SegmentTemplate.initialization
+                _initialization = _SegmentTemplate.initialization.replace('..', '')
                 if "$RepresentationID$" in _initialization:
                     _initialization = _initialization.replace("$RepresentationID$", _Representation.id)
                 if baseurl is not None: _initialization = baseurl + _initialization
@@ -373,7 +380,7 @@ class MPDPaser(object):
                     _Segment_duration = _Period.duration
                 repeat = int(math.ceil(_Segment_duration / interval_duration))
                 for number in range(start_number, repeat + start_number):
-                    _media = _SegmentTemplate.media # type: str
+                    _media = _SegmentTemplate.media.replace('..', '') # type: str
                     if "$Number$" in _media:
                         _media = _media.replace("$Number$", str(number))
                     if "$RepresentationID$" in _media:
@@ -391,7 +398,7 @@ class MPDPaser(object):
                         _S: S
                         repeat = 1 if _S.r is None else int(_S.r) + 1
                         for offset in range(repeat):
-                            _media = _SegmentTemplate.media # type: str
+                            _media = _SegmentTemplate.replace('..', '') # type: str
                             if "$Number$" in _media:
                                 _media = _media.replace("$Number$", str(start_number))
                                 start_number += 1
@@ -420,7 +427,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.4@xhlove",
+        prog="mpd content parser v1.5@xhlove",
         description=(
             "Mpd Content Parser, "
             "generate all tracks download links easily. "
@@ -429,6 +436,7 @@ def main():
     )
     command.add_argument("-p", "--path", help="mpd file path.")
     command.add_argument("-s", "--split", action="store_true", help="generate links for each Period.")
+    command.add_argument("-baseurl", "--baseurl", default="", help="set mpd base url.")
     args = command.parse_args()
     if args.path is None:
         args.path = input("paste mpd file path plz:\n")
@@ -438,7 +446,7 @@ def main():
         parser = MPDPaser(xmlpath.stem, xmlraw, args.split)
         parser.work()
         # parser.tree(parser.obj)
-        parser.generate()
+        parser.generate(args.baseurl)
     else:
         print(f"{str(xmlpath)} is not exists!")
 
