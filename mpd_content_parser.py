@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2020-09-14 13:13:18
-上次编辑时间: 2021-01-01 17:57:37
+上次编辑时间: 2021-01-01 18:08:57
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -137,8 +137,11 @@ class MPDPaser(object):
             _contentType = 'UNKONWN'
         if _AdaptationSet.codecs is not None:
             _codecs = _AdaptationSet.codecs
-        else:
+        elif _Representation.codecs is not None:
             _codecs = _Representation.codecs
+        else:
+            _Roles = find_child("Role", _AdaptationSet)
+            _codecs = _Roles[0].value
         if isInnerSeg is True:
             key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
         else:
@@ -229,7 +232,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.5@xhlove",
+        prog="mpd content parser v1.6@xhlove",
         description=("Mpd Content Parser, "
                      "generate all tracks download links easily. "
                      "Report bug to vvtoolbox.dev@gmail.com"))

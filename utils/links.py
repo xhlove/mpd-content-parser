@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2021-01-01 16:44:36
-上次编辑时间: 2021-01-01 17:57:47
+上次编辑时间: 2021-01-01 18:07:12
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -45,7 +45,7 @@ class Links(object):
         self.duration += duration
 
     def get_path(self) -> Path:
-        filename = f"{self.basename}-{self.key}-{self.codecs}-{self.bandwidth/1000:.3f}kbps"
+        filename = f"{self.basename}-{self.key}-{self.codecs}-{self.bandwidth/1000:.2f}kbps"
         if self.lang != "":
             filename += f".{self.lang}"
         if self.resolution != "":

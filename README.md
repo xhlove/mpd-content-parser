@@ -9,7 +9,7 @@ Parse mpd content as much as possible.
 # usage
 
 ```bash
-usage: mpd content parser v1.5@xhlove [-h] [-p PATH] [-s] [-baseurl BASEURL]
+usage: mpd content parser v1.6@xhlove [-h] [-p PATH] [-s] [-baseurl BASEURL]
 
 Mpd Content Parser, generate all tracks download links easily. Report bug to
 vvtoolbox.dev@gmail.com
