@@ -1,7 +1,7 @@
 '''
 作者: weimo
 创建日期: 2021-01-01 15:11:10
-上次编辑时间: 2021-01-01 15:46:38
+上次编辑时间: 2021-01-01 17:10:04
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
@@ -15,9 +15,15 @@ class SegmentTemplate(MPDItem):
         self.timescale = None
         self.duration = None
         self.presentationTimeOffset = None
-        self.initialization = None
-        self.media = None
+        self.initialization = None # type: str
+        self.media = None # type: str
         self.startNumber = 1
+
+    def get_initialization(self) -> str:
+        return self.initialization.replace('..', '')
+
+    def get_media(self) -> str:
+        return self.media.replace('..', '')
 
 # '''
 # The SegmentTimeline element shall contain a list of S elements each of which describes a sequence

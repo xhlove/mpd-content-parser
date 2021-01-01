@@ -24,4 +24,4 @@ optional arguments:
 
 # output
 
-![example](/urls_output.png)
+![example](output/urls_output.png)
