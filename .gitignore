@@ -1,0 +1,7 @@
+__pycache__/
+.vscode/
+*.mpd
+*.txt
+*.exe
+*.mp4
+*.zip
