@@ -5,7 +5,6 @@
 一个人的命运啊,当然要靠自我奋斗,但是...
 '''
 
-import math
 from typing import Dict
 from pathlib import Path
 from argparse import ArgumentParser
@@ -191,7 +190,7 @@ class MPDPaser(object):
                     _Segment_duration = _Period.duration
                 else:
                     _Segment_duration = _Period.duration
-                repeat = int(math.floor(_Segment_duration / interval_duration))
+                repeat = int(round(_Segment_duration / interval_duration))
                 for number in range(start_number, repeat + start_number):
                     _media = _SegmentTemplate.get_media()
                     if "$Number$" in _media:
