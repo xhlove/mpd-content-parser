@@ -6,7 +6,10 @@
 '''
 
 
-class MPDItem(object):
+class MPDItem:
+    '''
+    所有节点的父类
+    '''
     def __init__(self, name: str = "MPDItem"):
         self.name = name
         self.childs = list()

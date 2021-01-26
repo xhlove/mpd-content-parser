@@ -191,7 +191,7 @@ class MPDPaser(object):
                     _Segment_duration = _Period.duration
                 else:
                     _Segment_duration = _Period.duration
-                repeat = int(math.ceil(_Segment_duration / interval_duration))
+                repeat = int(math.floor(_Segment_duration / interval_duration))
                 for number in range(start_number, repeat + start_number):
                     _media = _SegmentTemplate.get_media()
                     if "$Number$" in _media:
