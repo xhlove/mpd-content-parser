@@ -6,6 +6,7 @@
 '''
 
 import re
+import requests
 from typing import Dict
 
 from utils.links import Links
@@ -29,6 +30,11 @@ def dump(tracks: Dict[str, Links]):
     for track_key, links in tracks.items():
         links.dump_urls()
 
+def getMpdFromUrl(url):
+    response = requests.get(url).text
+    with open('response.mpd', 'w') as responseFile:
+        responseFile.write(response)
+    return Path(os.path.abspath(responseFile.name)).resolve()
 
 def match_duration(_duration):
     if isinstance(_duration, str) is False:

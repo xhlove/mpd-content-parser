@@ -5,6 +5,7 @@ Parse mpd content as much as possible.
 # requirements
 
 > pip install argparse
+> pip install requests
 
 # usage
 
@@ -20,6 +21,10 @@ optional arguments:
   -s, --split           generate links for each Period.
   -baseurl BASEURL, --baseurl BASEURL
                         set mpd base url.
+  -url url, --url url 
+                      set url to get chunk from
+  -o path --out path
+                      set output directory for all txt files
 ```
 
 # output
