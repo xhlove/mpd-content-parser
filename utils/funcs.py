@@ -8,6 +8,7 @@
 import re
 import os
 import requests
+from pathlib import Path
 from typing import Dict
 
 from utils.links import Links
