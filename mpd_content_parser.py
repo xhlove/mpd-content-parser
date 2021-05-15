@@ -140,7 +140,10 @@ class MPDPaser(object):
             _codecs = _Representation.codecs
         else:
             _Roles = find_child("Role", _AdaptationSet)
-            _codecs = _Roles[0].value
+            if len(_Roles) == 0:
+                _codecs = 'UNKONWN_CODEC'
+            else:
+                _codecs = _Roles[0].value
         if isInnerSeg is True:
             key = f"{_AdaptationSet.id}-{_Representation.id}-{_contentType}"
         else:
@@ -185,11 +188,11 @@ class MPDPaser(object):
             SegmentTimelines = find_child("SegmentTimeline", _SegmentTemplate)
             urls = []
             if len(SegmentTimelines) == 0:
-                interval_duration = float(int(_SegmentTemplate.duration) / int(_SegmentTemplate.timescale))
                 if _SegmentTemplate.presentationTimeOffset is None:
                     _Segment_duration = _Period.duration
                 else:
                     _Segment_duration = _Period.duration
+                interval_duration = int(_SegmentTemplate.duration) / int(_SegmentTemplate.timescale)
                 repeat = int(round(_Segment_duration / interval_duration))
                 for number in range(start_number, repeat + start_number):
                     _media = _SegmentTemplate.get_media()
