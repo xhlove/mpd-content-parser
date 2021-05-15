@@ -9,13 +9,14 @@ from typing import Dict
 from pathlib import Path
 from argparse import ArgumentParser
 from xml.parsers.expat import ParserCreate
+import os
 
 # aria2c下载生成的txt命令示例 以及使用代理的示例
 # aria2c -i urls.txt -d DownloadPath --https-proxy="http://127.0.0.1:10809" --http-proxy="http://127.0.0.1:10809"
 
 from utils.mpd import MPD
 from utils.links import Links
-from utils.funcs import tree, find_child, dump, match_duration
+from utils.funcs import tree, find_child, dump, match_duration,getMpdFromUrl
 
 from utils.childs.adaptationset import AdaptationSet
 from utils.childs.baseurl import BaseURL
@@ -242,20 +243,50 @@ def main():
     command.add_argument("-s", "--split", action="store_true", help="generate links for each Period.")
     command.add_argument("-tree", "--tree", action="store_true", help="print mpd tree.")
     command.add_argument("-baseurl", "--baseurl", default="", help="set mpd base url.")
+    command.add_argument("-url", "--url", default="", help="url to fetch link from ")
+    command.add_argument("-o", "--out", default="", help="output directory to store all text files")
     args = command.parse_args()
-    if args.path is None:
-        args.path = input("paste mpd file path plz:\n")
-    xmlpath = Path(args.path).resolve()
-    if xmlpath.exists():
-        xmlraw = xmlpath.read_text(encoding="utf-8")
+    # print(args)
+    # if args.path is None:
+    #     print("Please specify the path using --path value")
+    #     command.print_help()
+    #     return
+    # args.path = input("paste mpd file path plz:\n")
+    if args.url is not None:
+        xmlpath = getMpdFromUrl(url=args.url)
+        xmlraw = xmlpath.read_text(encoding='utf-8')
         parser = MPDPaser(xmlpath.stem, xmlraw, args.split)
         parser.work()
         if args.tree:
             tree(parser.obj)
         tracks = parser.parse(args.baseurl)
-        dump(tracks)
+        if args.out is not None:
+            os.mkdir(Path(args.out).resolve())
+            os.chdir(args.out)
+            dump(tracks)
+        else:
+            dump(tracks)
     else:
-        print(f"{str(xmlpath)} is not exists!")
+        xmlpath = Path(args.path).resolve()
+        if xmlpath.exists():
+            xmlraw = xmlpath.read_text(encoding="utf-8")
+            parser = MPDPaser(xmlpath.stem, xmlraw, args.split)
+            parser.work()
+            if args.tree:
+                tree(parser.obj)
+            tracks = parser.parse(args.baseurl)
+            if args.out is not None:
+                os.mkdir(Path(args.out).resolve())
+                os.chdir(args.out)
+                dump(tracks)
+            else:
+                dump(tracks)
+        else:
+            print(f"{str(xmlpath)} is not exists!")
+
+
+if __name__ == "__main__":
+    main()
 
 
 if __name__ == "__main__":
