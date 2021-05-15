@@ -113,7 +113,10 @@ class MPDPaser(object):
                 SegmentTemplates = find_child("SegmentTemplate", _AdaptationSet)
                 for _Representation in Representations:
                     _Representation: Representation
+                    R_SegmentTemplates = find_child("SegmentTemplate", _AdaptationSet)
                     if len(SegmentTemplates) == 0:
+                        self.generate(baseurl, _Period, _AdaptationSet, _Representation)
+                    if len(R_SegmentTemplates) == 1:
                         self.generate(baseurl, _Period, _AdaptationSet, _Representation)
                     else:
                         # SegmentTemplate和Representation同一级的话，解析不一样
@@ -235,7 +238,7 @@ class MPDPaser(object):
 
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.6@xhlove",
+        prog="mpd content parser v1.7@xhlove",
         description=("Mpd Content Parser, "
                      "generate all tracks download links easily. "
                      "Report bug to vvtoolbox.dev@gmail.com"))
@@ -243,8 +246,8 @@ def main():
     command.add_argument("-s", "--split", action="store_true", help="generate links for each Period.")
     command.add_argument("-tree", "--tree", action="store_true", help="print mpd tree.")
     command.add_argument("-baseurl", "--baseurl", default="", help="set mpd base url.")
-    command.add_argument("-url", "--url", default="", help="url to fetch link from ")
-    command.add_argument("-o", "--out", default="", help="output directory to store all text files")
+    command.add_argument("-url", "--url", default=None, help="url to fetch link from ")
+    command.add_argument("-o", "--out", default=None, help="output directory to store all text files")
     args = command.parse_args()
     # print(args)
     # if args.path is None:
