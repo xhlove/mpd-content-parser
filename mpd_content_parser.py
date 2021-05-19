@@ -182,7 +182,7 @@ class MPDPaser(object):
                 if "$RepresentationID$" in _initialization:
                     _initialization = _initialization.replace("$RepresentationID$", _Representation.id)
                 if baseurl is not None:
-                    _initialization = baseurl + _initialization
+                    _initialization = fix_url(baseurl, _initialization)
                 links.urls.append(_initialization)
                 self.tracks[links.key] = links
             else:
@@ -208,7 +208,7 @@ class MPDPaser(object):
                         _media = _media.replace("$RepresentationID$", _Representation.id)
                     _url = _media
                     if baseurl is not None:
-                        _url = baseurl + _url
+                        _url = fix_url(baseurl, _url)
                     urls.append(_url)
             else:
                 for _SegmentTimeline in SegmentTimelines:
@@ -231,16 +231,26 @@ class MPDPaser(object):
                                 _last_time_offset += int(_S.d)
                             _url = _media
                             if baseurl is not None:
-                                _url = baseurl + _url
+                                _url = fix_url(baseurl, _url)
                             urls.append(_url)
             self.tracks[links.key].urls.extend(urls)
             if self.split is True:
                 self.tracks[links.key].dump_urls()
 
 
+def fix_url(base_url: str, url: str) -> str:
+    home_url = '/'.join(base_url.split('/', maxsplit=3)[:-1])
+    if url.startswith('http://') or url.startswith('https://') or url.startswith('ftp://'):
+        return url
+    elif url.startswith('/'):
+        return f'{home_url}{url}'
+    else:
+        return f'{base_url}/{url}'
+
+
 def main():
     command = ArgumentParser(
-        prog="mpd content parser v1.7@xhlove",
+        prog="mpd content parser v1.8@xhlove",
         description=("Mpd Content Parser, "
                      "generate all tracks download links easily. "
                      "Report bug to vvtoolbox.dev@gmail.com"))
