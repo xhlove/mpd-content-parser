@@ -172,6 +172,8 @@ class MPDPaser(object):
             SegmentTemplates = find_child("SegmentTemplate", _Representation)
         else:
             SegmentTemplates = find_child("SegmentTemplate", _AdaptationSet)
+        if len(SegmentTemplates) == 0:
+            SegmentTemplates = find_child("SegmentTemplate", _AdaptationSet)
         for _SegmentTemplate in SegmentTemplates:
             _SegmentTemplate: SegmentTemplate
             start_number = int(_SegmentTemplate.startNumber)  # type: int
