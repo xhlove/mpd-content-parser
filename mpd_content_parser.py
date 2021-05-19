@@ -250,11 +250,10 @@ def main():
     command.add_argument("-o", "--out", default=None, help="output directory to store all text files")
     args = command.parse_args()
     # print(args)
-    # if args.path is None:
-    #     print("Please specify the path using --path value")
-    #     command.print_help()
-    #     return
-    # args.path = input("paste mpd file path plz:\n")
+    if args.url is None and args.path is None:
+        print("Please specify the path using --path value")
+        command.print_help()
+        args.path = input("paste mpd file path plz:\n")
     if args.url is not None:
         xmlpath = getMpdFromUrl(url=args.url)
         xmlraw = xmlpath.read_text(encoding='utf-8')
