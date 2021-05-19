@@ -257,6 +257,8 @@ def main():
         command.print_help()
         args.path = input("paste mpd file path plz:\n")
     if args.url is not None:
+        if args.baseurl == '':
+            args.baseurl = args.url.split('?')[0][::-1].split('/', maxsplit=1)[-1][::-1]
         xmlpath = getMpdFromUrl(url=args.url)
         xmlraw = xmlpath.read_text(encoding='utf-8')
         parser = MPDPaser(xmlpath.stem, xmlraw, args.split)
